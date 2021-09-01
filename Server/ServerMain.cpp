@@ -1,7 +1,7 @@
 #include <WinSock2.h>
 #include <iostream>
-#include <thread>
-#include <list>
+#include <future>
+#include <sstream>
 #include "SimpleMessenger\IncludeMe.h"
 #pragma warning(disable: 4996)
 
@@ -33,6 +33,8 @@ void ClientHandler(int index) {
     }
 }
 
+
+
 int main(int argc, char* argv[]) {
     WSAData wsaData;                                                        // Загрузка необходимой версии библиотеки
     WORD DLLVersion = MAKEWORD(2, 1);                                       // Запрашиваемая версия библиотеки WinSock
@@ -41,74 +43,70 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    Socket server;
-     if (server.Create() == Result::Success) {
+    Socket listening;
+     if (listening.Create() == Result::Success) {
+
         SOCKADDR_IN addr;                                                       // Хранит информацию об адресе сокета
         addr.sin_addr.s_addr = inet_addr("127.0.0.1");  // IP
         addr.sin_port = htons(4790);                    // Port
         addr.sin_family = AF_INET;
-        if (server.Listen(Endpoint((sockaddr*)&addr)) == Result::Success) {
+
+        if (listening.Listen(Endpoint((sockaddr*)&addr)) == Result::Success) {
             std::cout << "Socket successfully listening on 4790" << std::endl;
-            std::list<std::thread> client_threads;
-            for (int i = 0; i < 5; ++i) {   // вынести в константу
-                Socket client;
-                if (server.Accept(client) == Result::Success) {
-                    Connections[i] = client.GetSocketHandle();
-                    ++count;
-                    std::cout << "Client connected!" << std::endl;
 
-                    int msg_size = 0;
+            fd_set master;
+            FD_ZERO(&master);
+            FD_SET(listening.GetSocketHandle(), &master);
+            while (true) {
+                fd_set copy = master;
+                int socket_count = select(0, &copy, nullptr, nullptr, nullptr);
+                for (int i = 0; i < socket_count; ++i) {
+                    SOCKET sock = copy.fd_array[i];
+                    
+                    if (sock == listening.GetSocketHandle()) {
+                        SOCKET client = accept(listening.GetSocketHandle(), nullptr, nullptr);
+                        FD_SET(client, &master);
 
-                    //int res = recv(Connections[i], (char*)&msg_size, sizeof(msg_size), NULL);
-                    //char* name = new char[msg_size + 1];
-                    //name[msg_size] = '\0';
-                    //recv(Connections[i], name, msg_size, NULL);
-                    //std::string hello_msg(name);
-                    //hello_msg += " joined to chat";
-                    //msg_size = hello_msg.size();
-                    //int bytesReceived = 0;
-                    //Result res = client.Send(&hello_msg, msg_size, bytesReceived);
+                        std::string welcomeMsg = "Welcome to the Awesome Chat Server!\r\n";
+                        send(client, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
+                    }
+                    else {
+                        char buf[4096];
+                        ZeroMemory(buf, 4096);
+                        int bytesIn = recv(sock, buf, 4096, 0);
+                        if (bytesIn == SOCKET_ERROR) {
+                            closesocket(sock);
+                        }
+                        else {
+                            for (int i = 0; i < master.fd_count; i++)
+                            {
+                                SOCKET outSock = master.fd_array[i];
+                                if (outSock != listening.GetSocketHandle() && outSock != sock)
+                                {
+                                    std::ostringstream ss;
+                                    ss << "SOCKET #" << sock << ": " << buf << "\r\n";
+                                    std::string strOut = ss.str();
 
-                    char msg[256] = "Hello. It's my first network program!\n";
-                    int bytesReceived = 0;
-                    Result res = client.Send(&msg, sizeof(msg), bytesReceived);
-                    client_threads.push_back(std::thread(ClientHandler, i));
-                    client_threads.back().detach();
-                    //CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)i, NULL, NULL);
-                }
-                else {
-                    std::cerr << "Failed to accept new connection" << std::endl;
+                                    int res = send(outSock, strOut.c_str(), strOut.size() + 1, 0);
+                                    if (res == SOCKET_ERROR) {
+                                        closesocket(sock);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
         else {
             std::cerr << "Failed to list on port 4790" << std::endl;
         }
-        server.Close();
+        listening.Close();
     }
     else {
         std::cerr << "Socket failed to create" << std::endl;
     }
 
-    /*
-    SOCKET client;
-    for (int i = 0; i < MAX_CLIENT_COUNT; ++i) {
-        client = accept(sListen, (SOCKADDR*)&addr, &sizeofaddr);     // Устанавливаем соединение с клиентом
-        if (client == 0) {
-            std::cout << "Connection failed" << std::endl;
-            exit(1);
-        }
-        else {
-            Connections[i] = client;
-            ++count;
-            std::cout << "Client connected!" << std::endl;
-            char msg[256] = "Hello. It's my first network program!\n";
-            send(client, msg, sizeof(msg), NULL);                    // Отправка сообщения клиенту
-
-            CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)i, NULL, NULL);
-        }
-    }
-    */
     system("pause");
     return 0;
 }
