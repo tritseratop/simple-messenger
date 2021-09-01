@@ -7,29 +7,29 @@ const int MAX_CLIENT_COUNT = 5;
 SOCKET Connections[MAX_CLIENT_COUNT];
 int count = 0;
 
-//void ClientHandler(int index) {
-//    int msg_size = 0;
-//    while (true) {
-//        int res = recv(Connections[index], (char*)&msg_size, sizeof(msg_size), NULL);
-//        if (res == SOCKET_ERROR) {
-//            closesocket(Connections[index]);
-//            break;
-//        }
-//        char* msg = new char[msg_size + 1];
-//        msg[msg_size] = '\0';
-//        recv(Connections[index], msg, msg_size, NULL);
-//        for (int i = 0; i < count; ++i) {
-//            if (i == index) {
-//                continue;
-//            }
-//            else {
-//                send(Connections[i], (char*)&msg_size, sizeof(int), NULL);
-//                send(Connections[i], msg, msg_size, NULL);
-//            }
-//        }
-//        delete[] msg;
-//    }
-//}
+void ClientHandler(int index) {
+    int msg_size = 0;
+    while (true) {
+        int res = recv(Connections[index], (char*)&msg_size, sizeof(msg_size), NULL);
+        if (res == SOCKET_ERROR) {
+            closesocket(Connections[index]);
+            break;
+        }
+        char* msg = new char[msg_size + 1];
+        msg[msg_size] = '\0';
+        recv(Connections[index], msg, msg_size, NULL);
+        for (int i = 0; i < count; ++i) {
+            if (i == index) {
+                continue;
+            }
+            else {
+                send(Connections[i], (char*)&msg_size, sizeof(int), NULL);
+                send(Connections[i], msg, msg_size, NULL);
+            }
+        }
+        delete[] msg;
+    }
+}
 
 int main(int argc, char* argv[]) {
     WSAData wsaData;                                                        // Загрузка необходимой версии библиотеки
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
                     int bytesReceived = 0;
                     Result res = client.Send(&msg, sizeof(msg), bytesReceived);
 
-                    //CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)i, NULL, NULL);
+                    CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, (LPVOID)i, NULL, NULL);
                 }
                 else {
                     std::cerr << "Failed to accept new connection" << std::endl;
