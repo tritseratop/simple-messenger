@@ -37,6 +37,7 @@ void Server::HandleClients() {
 			clients[i] = client.GetSocketHandle();
 			++count;
 			std::cout << "Client connected!" << std::endl;
+
 			char msg[256] = "Hello. It's my first network program!\n";
 			int bytesReceived = 0;
 			Result res = client.Send(&msg, sizeof(msg), bytesReceived);

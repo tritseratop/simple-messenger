@@ -1,7 +1,8 @@
 #include <WinSock2.h>
 #include <iostream>
 #include <string>
-#pragma comment(lib, "ws2_32.lib")
+#include "SimpleMessenger\IncludeMe.h"
+
 #pragma warning(disable: 4996)
 
 SOCKET Connection;
@@ -25,8 +26,10 @@ int main(int argc, char* argv[]) {
         std::cout << "DLL loading failed" << std::endl;
         exit(1);
     }
-    SOCKADDR_IN addr;
 
+    Socket client;
+
+    SOCKADDR_IN addr;
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr.sin_port = htons(4790);
     addr.sin_family = AF_INET;
@@ -38,6 +41,11 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "Client connected! \n";
+    std::string name = "Hello";
+    int name_size = name.size();
+    send(Connection, (char*)&name_size, sizeof(int), NULL);
+    send(Connection, name.c_str(), name_size, NULL);
+
     char msg[256];
     recv(Connection, msg, sizeof(msg), NULL);                       // Прием сообщения
     std::cout << msg;
