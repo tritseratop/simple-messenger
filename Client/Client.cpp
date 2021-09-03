@@ -1,66 +1,44 @@
-#include <WinSock2.h>
-#include <iostream>
-#include <string>
-#include "SimpleMessenger\IncludeMe.h"
+#include "Client.h"
+#include <thread>
+#include <future>
 
-#pragma warning(disable: 4996)
-
-SOCKET Connection;
-
-void ClientHandler() {
-    int msg_size = 0;
-    while (true) {
-        recv(Connection, (char*)&msg_size, sizeof(int), NULL);
-        char* msg = new char[msg_size + 1];
-        msg[msg_size] = '\0';
-        recv(Connection, msg, msg_size, NULL);
-        std::cout << msg << std::endl;
-        delete[] msg;
-    }
+void Client::Receiving() {
+	std::string message;
+	while (true) {
+		main_socket.Recv(message);
+		std::cout << message << std::endl;
+	}
 }
 
-int main(int argc, char* argv[]) {
-    WSAData wsaData;
-    WORD DLLVersion = MAKEWORD(2, 1);
-    if (WSAStartup(DLLVersion, &wsaData) != 0) {
-        std::cout << "DLL loading failed" << std::endl;
-        exit(1);
-    }
+Result Client::Connect(Endpoint endpoint) {
+	return main_socket.Connect(endpoint);
+}
 
-    Socket client;
+Result Client::Connect(std::string ip, int port) {
+	return main_socket.Connect(Endpoint(ip.c_str(), port));
+}
 
-    SOCKADDR_IN addr;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(4790);
-    addr.sin_family = AF_INET;
-
-    Connection = socket(AF_INET, SOCK_STREAM, NULL);
-    if (connect(Connection, (SOCKADDR*)&addr, sizeof(addr)) != 0) {  // Соединение с сервером
-        std::cout << "Error: failed connect to server! \n";
-        exit(1);
-    }
-
-    std::cout << "Client connected! \n";
-    std::string name = "Hello";
-    int name_size = name.size();
-    send(Connection, (char*)&name_size, sizeof(int), NULL);
-    send(Connection, name.c_str(), name_size, NULL);
-
-    char msg[256];
-    recv(Connection, msg, sizeof(msg), NULL);                       // Прием сообщения
-    std::cout << msg;
-
-    CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ClientHandler, NULL, NULL, NULL);
-
-    std::string message;
-    while (true) {
-        std::getline(std::cin, message);
-        int message_size = message.size();
-        send(Connection, (char*)&message_size, sizeof(int), NULL);
-        send(Connection, message.c_str(), message_size, NULL);
-        Sleep(10); // ???
-    }
-
-    system("pause");
-    return 0;
+// ЖИЕСТЬ
+Result Client::StartChating() {
+	std::string rec_msg;
+	std::string send_msg;
+	std::future<void> f = std::async(
+		std::launch::async,
+		[this](std::string& message) {
+			while (true) {
+				if (main_socket.Recv(message) == Result::Error) {
+					int error = WSAGetLastError();
+					return;
+				}
+				std::cout << message << std::endl;
+			}
+		}, 
+		std::ref(rec_msg)
+	);
+	while (true) {
+		std::getline(std::cin, send_msg);
+		if (main_socket.Send(send_msg) == Result::Error) {
+			return Result::Error;
+		}
+	}
 }

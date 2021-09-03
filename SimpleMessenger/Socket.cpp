@@ -52,6 +52,14 @@ Result Socket::Listen(Endpoint endpoint, int backlog) {
 	return Result::Success;
 }
 
+Result Socket::Listen(std::string ip, int port) {
+	SOCKADDR_IN addr;								// Хранит информацию об адресе сокета
+	inet_pton(AF_INET, ip.c_str(), &addr.sin_addr.s_addr); //IP
+	addr.sin_port = htons(port);					// Port
+	addr.sin_family = AF_INET;
+	return Listen( Endpoint((sockaddr*)&addr) );
+}
+
 Result Socket::Accept(Socket& outSocket) {
 	sockaddr_in addr = {};
 	int length = sizeof(sockaddr_in);
@@ -91,6 +99,48 @@ Result Socket::Recv(void* data, int numberOfBytes, int& bytesSent) {
 		int error = WSAGetLastError();
 		return Result::Error;
 	}
+	return Result::Success;
+}
+
+Result Socket::Send(std::string& message) {
+	int bytesSent = 0;
+	const char* msg = message.c_str();
+	int size = message.size();
+	// Отправляем размер сообщения
+	Result res = Send(&size, sizeof(int), bytesSent); // отправляется неверный
+	if (bytesSent == SOCKET_ERROR) {
+		int error = WSAGetLastError();
+		return Result::Error;
+	}
+	// Отправляем сообщение
+	res = Send(message.c_str(), size, bytesSent); // BUG
+	if (bytesSent == SOCKET_ERROR) {
+		int error = WSAGetLastError();
+		return Result::Error;
+	}
+}
+
+Result Socket::Recv(std::string& message) {
+	int bytesRecieved = 0;
+	int size;
+	// Принимаем размер
+	Recv(&size, sizeof(int), bytesRecieved);
+	if (bytesRecieved == SOCKET_ERROR) {
+		int error = WSAGetLastError();
+		return Result::Error;
+	}
+	// Подготовливаем хранилище сообщения
+	message.resize(size + 1);
+	message[size] = '\0';
+	// Принимаем сообщение
+	Recv(&message[0], size, bytesRecieved);
+	if (bytesRecieved == SOCKET_ERROR) {
+		int error = WSAGetLastError();
+		return Result::Error;
+	}
+	/*for (int i = 0; i < size + 1; ++i) {
+		message.
+	}*/
 	return Result::Success;
 }
 

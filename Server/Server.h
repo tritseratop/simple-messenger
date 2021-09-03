@@ -2,24 +2,25 @@
 #include "SimpleMessenger\IncludeMe.h"
 #include <iostream>
 #include <list>
-#include <thread>
+#include <map>
+#include <queue>
+#include <string>
 
-class Server {
+class Server : public Network {
 public:
-	Server() : clients(5) {
-		if (server.Create() != Result::Success) {
-			std::cerr << "Socket failed to create" << std::endl;
-		}
-	}
+	Server() {}
 	Result StartListen(Endpoint endpoint);
-	bool Initialize();
-	void Shutdown();
+	Result StartListen(std::string ip = IP, int port = PORT);
 	void HandleClients();
 	//friend void ClientHandler(Server& server);
 	void AddClient(Socket client);
 private:
-	std::vector<Socket> clients;
-	Socket server;
-	size_t count = 0;
-	std::list<std::thread> cliend_handler_threads;
+	std::list<Socket> client_sockets;
+	std::map<int, std::list<Socket>::iterator> client_it;
+	std::queue<Socket> waiting_clients;
+	//Socket server_socket;
+	size_t client_count = 0;
+	Result SendToAll(std::string msg, Socket from);
+	void DeleteSocket(Socket& s);
+	//fd_set master;
 };
