@@ -11,7 +11,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Client socket successfully created!" << std::endl;
         if (client.Connect() == Result::Success) {
             std::cout << "Client connected!" << std::endl;
-            client.StartChating();
+            client.StartSending();
+            client.StartReceiving();
         }
         else {
             std::cerr << "Failed to connect to the server!" << std::endl;

@@ -40,7 +40,7 @@ void Server::HandleClients() {
 
                 FD_SET(client.GetSocketHandle(), &master);
 
-                std::string welcomeMsg = "Welcome to the Awesome Chat Server!\r\n";
+                std::string welcomeMsg = "Welcome to the Awesome Chat Server!\r";
 
                 client.Send(welcomeMsg);
                 //send(client.GetSocketHandle(), welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
@@ -62,7 +62,7 @@ void Server::HandleClients() {
 Result Server::SendToAll(std::string msg, Socket from) {
     for (auto& s : client_sockets) {
         if (from.GetSocketHandle() != s.GetSocketHandle()) {
-            std::string msg_to_send = "Client #" + std::to_string(from.GetSocketHandle()) + " " + msg + "\n";
+            std::string msg_to_send = "Client #" + std::to_string(from.GetSocketHandle()) + " " + msg;
             if (s.Send(msg_to_send) != Result::Success) {
                 DeleteSocket(s);
             }

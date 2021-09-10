@@ -14,7 +14,6 @@ public:
 	void Receiving();
 private:
 	std::list<Socket> client_sockets;
-	std::queue<Socket> waiting_clients;
+	std::queue<Socket> waiting_clients; // TODO очередь ожидания
 	size_t client_count = 0;
-	Result SendToAll(std::string msg, Socket from);
 };

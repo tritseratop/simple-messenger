@@ -107,13 +107,13 @@ Result Socket::Send(std::string& message) {
 	const char* msg = message.c_str();
 	int size = message.size();
 	// Отправляем размер сообщения
-	Result res = Send(&size, sizeof(int), bytesSent); // отправляется неверный
+	Result res = Send(&size, sizeof(int), bytesSent);
 	if (bytesSent == SOCKET_ERROR) {
 		int error = WSAGetLastError();
 		return Result::Error;
 	}
 	// Отправляем сообщение
-	res = Send(message.c_str(), size, bytesSent); // BUG
+	res = Send(message.c_str(), size, bytesSent);
 	if (bytesSent == SOCKET_ERROR) {
 		int error = WSAGetLastError();
 		return Result::Error;
@@ -130,17 +130,15 @@ Result Socket::Recv(std::string& message) {
 		return Result::Error;
 	}
 	// Подготовливаем хранилище сообщения
-	message.resize(size + 1);
-	message[size] = '\0';
+	message.resize(size);
+	//message[size] = '\0';
+
 	// Принимаем сообщение
 	Recv(&message[0], size, bytesRecieved);
 	if (bytesRecieved == SOCKET_ERROR) {
 		int error = WSAGetLastError();
 		return Result::Error;
 	}
-	/*for (int i = 0; i < size + 1; ++i) {
-		message.
-	}*/
 	return Result::Success;
 }
 

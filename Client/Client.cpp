@@ -6,7 +6,7 @@ void Client::Receiving() {
 	std::string message;
 	while (true) {
 		main_socket.Recv(message);
-		std::cout << message << std::endl;
+		std::cout << message;
 	}
 }
 
